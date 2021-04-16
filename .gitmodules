@@ -1,0 +1,9 @@
+[submodule "crawler"]
+	path = crawler
+	url = git@github.com:Handy-Search/crawler.git
+[submodule "indexer"]
+	path = indexer
+	url = git@github.com:Handy-Search/indexer.git
+[submodule "pagerank"]
+	path = pagerank
+	url = git@github.com:Handy-Search/pagerank.git

@@ -28,6 +28,7 @@ hs_err_pid*
 
 # Eclipse files
 /target/
+.classpath
 
 # Jetbrains files
 .idea/

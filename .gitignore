@@ -32,6 +32,7 @@ hs_err_pid*
 
 # Jetbrains files
 .idea/
+project.iml
 
 # Microsoft files
 .vscode/

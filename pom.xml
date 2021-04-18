@@ -71,6 +71,7 @@
   </build>
 
   <modules>
+    <module>interfaces</module>
     <module>crawler</module>
     <module>indexer</module>
     <module>pagerank</module>

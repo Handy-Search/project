@@ -7,3 +7,6 @@
 [submodule "pagerank"]
 	path = pagerank
 	url = git@github.com:Handy-Search/pagerank.git
+[submodule "interfaces"]
+	path = interfaces
+	url = git@github.com:Handy-Search/interfaces.git

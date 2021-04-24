@@ -43,8 +43,14 @@
       <version>${flink.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-clients -->
     <dependency>
+      <!-- https://search.maven.org/artifact/org.apache.httpcomponents/httpclient/4.5.13/jar -->
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.0.3</version>
+    </dependency>
+    <dependency>
+      <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-clients -->
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-clients_2.12</artifactId>
       <version>${flink.version}</version>

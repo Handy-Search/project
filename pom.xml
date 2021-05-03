@@ -163,5 +163,6 @@
     <module>crawler</module>
     <module>indexer</module>
     <module>pagerank</module>
+    <module>handy-search</module>
   </modules>
 </project>

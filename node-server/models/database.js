@@ -112,6 +112,8 @@ function search(query) {
      { $out: { db: database, coll: mrNum } }
   ] );
 
+  //TODO combine with pagerank?
+
   mrNum.drop();
   mrDenD.drop();
   mrDenQ.drop();
@@ -119,6 +121,7 @@ function search(query) {
 
 
   //return the result of the query!
+  //TODO what do we actually want to return and where does it go? back to java and then paginated result?
   return docFreqs.findOne()
 }
 

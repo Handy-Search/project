@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const Stemmer = require("snowball-stemmers");
 // Replace the uri string with your MongoDB deployment's connection string.
 const uri =
   "mongodb+srv://handy:search@cluster0.4azy8.mongodb.net";
@@ -11,9 +12,23 @@ client.connect()
   .then(() => console.log("mongodb connected!"))
   .catch(console.log)
 
+function countWords(wordCounts) {
+
+
+}
+
 function search(query) {
   const database = client.db('indexDBTest');
   const docFreqs = database.collection('docFreq')
+
+  var queryClean = query.replace("/[^a-zA-Z0-9\s]/g", "");
+  var words = query.split(" ");
+  var stem = Stemmer.newStemmer('english');
+  words = words.map(word => stem.stem(word));
+  var wordCounts = new Map();
+  words.forEach(countWords(wordCounts));
+
+
 
   // TODO @Neil, it would be easiest to pass in a map from Java with each word
   // of the query and it's "weight".  Is that possible?

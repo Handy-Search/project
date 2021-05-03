@@ -23,6 +23,16 @@ function search(query) {
 //  var uuid = 1;
   var uuid = Math.random();
 
+   db.tfidf.aggregate( [
+       { $match : {
+            wordId { $in: { queryArr } }
+       } },
+       { $project : { "tfidf": 1, "wordId": 1,  "docId" : 1 } },
+       { $out: { db: database, coll: "tfidf" + uuid } }
+    ] );
+
+  var qtfidf = database.collection("tfidf" + uuid);
+
   // cosine sim numerator
   var mapFnNum = function map() {
       var word = this.wordId;
@@ -38,7 +48,7 @@ function search(query) {
       };
       return sum;
       };
-  db.tfidf2.mapReduce(
+  db.qtfidf.mapReduce(
       mapFnNum,
       reduceFnNum,
       { out: "mrExampleNum" + uuid}
@@ -59,7 +69,7 @@ function search(query) {
       return Math.sqrt(sum);
       };
 
-  db.tfidf2.mapReduce(
+  db.qtfidf.mapReduce(
       mapFnDenomDoc,
       reduceFnDenomDoc,
       { out: "mrExampleDenD" + uuid}
@@ -83,37 +93,54 @@ function search(query) {
       return Math.sqrt(sum);
       };
 
-  db.tfidf2.mapReduce(
+  db.qtfidf.mapReduce(
       mapFnDenomQ,
       reduceFnDenomQ,
       { out: "mrExampleDenQ" + uuid}
       )
 
-   var mrNum = db.collection("mrExampleNum" + uuid);
-   var mrDenD = db.collection("mrExampleDenD" + uuid);
-   var mrDenQ = db.collection("mrExampleDenQ" + uuid);
+   var mrNum = database.collection("mrExampleNum" + uuid);
+   var mrDenD = database.collection("mrExampleDenD" + uuid);
+   var mrDenQ = database.collection("mrExampleDenQ" + uuid);
 
    mrNum.updateMany( {}, {$rename: {"value" : "mrNum"}});
    mrDenD.updateMany( {}, {$rename: {"value" : "mrDenD"}});
    mrDenQ.updateMany( {}, {$rename: {"value" : "mrDenQ"}});
 
   db.mrDenD.aggregate( [
-     { $merge : { into: { db: "indexDB", coll: mrDenQ }, on: "_id"} }
+     { $merge : { into: { db: database, coll: mrDenQ }, on: "_id"} }
   ] );
   db.mrDenQ.aggregate( [
      { $project : { "mrDenD": 1, "mrDenQ": 1,  "mrDen" : { $multiply: ["$mrDenD", "$mrDenQ"] }}},
      { $out: { db: database, coll: mrDenQ } }
   ] );
   db.mrDenQ.aggregate( [
-     { $merge : { into: { db: "indexDB", coll: mrNum}, on: "_id"} }
+     { $merge : { into: { db: database, coll: mrNum}, on: "_id"} }
   ] );
   db.mrNum.aggregate( [
      { $project : { "mrNum": 1, "mrDenQ": 1, "mrDenD" : 1,  "mrDen" : 1, "mrOut" : { $divide: ["$mrNum", "$mrDen"] }}},
+     // maybe combine with pagerank here and the sort and limit?
+     // then combine with sites
      { $out: { db: database, coll: mrNum } }
   ] );
 
   //TODO combine with pagerank?
+  db.mrNum.aggregate( [
+    { $sort: { "mrOut" : -1 } },
+    { $limit: 30 }
+  ] );
+  var sites = database.collection("sites");
+  db.mrNum.aggregate( [
+     { $lookup : {
+        from: "sites" ,
+        localField: "_id",
+        foreignField: "docId",
+        as: "queryResults"}
+     }
+//     , { $out: { db: database, coll: "results"+uuid } }
+  ] );
 
+  qtfidf.drop();
   mrNum.drop();
   mrDenD.drop();
   mrDenQ.drop();

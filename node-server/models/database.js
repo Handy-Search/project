@@ -127,7 +127,7 @@ function search(query) {
   ] );
   db.mrDenQ.aggregate( [
      { $project : { "mrDenD": 1, "mrDenQ": 1,  "mrDen" : { $multiply: ["$mrDenD", "$mrDenQ"] }}},
-     { $out: { db: database, coll: mrDenQ } }
+     { $out : { db: database, coll: mrDenQ } }
   ] );
   db.mrDenQ.aggregate( [
      { $merge : { into: { db: database, coll: mrNum}, on: "_id"} }
@@ -136,13 +136,23 @@ function search(query) {
      { $project : { "mrNum": 1, "mrDenQ": 1, "mrDenD" : 1,  "mrDen" : 1, "mrOut" : { $divide: ["$mrNum", "$mrDen"] }}},
      // maybe combine with pagerank here and the sort and limit?
      // then combine with sites
-     { $out: { db: database, coll: mrNum } }
+     { $out : { db: database, coll: mrNum } }
   ] );
 
   //TODO combine with pagerank?
-  db.mrNum.aggregate( [
-    { $sort: { "mrOut" : -1 } },
-    { $limit: 30 }
+  async function updateFieldName(from, to, collection) {
+      const result = await collection.updateMany( [
+        {},
+        { $set : { to : "$" + from }}
+      ]);
+  }
+  updateFieldName("_id", "docId", mrNum);
+  var pagerank = database.collection("pagerank");
+  async const results = await db.pagerank.aggregate( [
+    { $merge : { into: { db: database, coll: mrNum }, on: "docId"} },
+    { $project : "pageScore" : { $add : [ "$wt" , "$pag" ] } },
+    { $sort : { "mrOut" : -1 } },
+    { $limit : 30 }
   ] );
   var sites = database.collection("sites");
   db.mrNum.aggregate( [

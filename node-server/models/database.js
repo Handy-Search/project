@@ -132,6 +132,13 @@ async function search(query) {
   //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
 
   await db.pagerank.aggregate([
+    { $lookup: {
+              from: mrNum,
+              localField: "docId",
+              foreignField: "docId",
+              as: "tfidf"
+            }
+    },
     { $merge: { into: { db: database, coll: mrNum }, on: "docId" } },
     { $project: { "pageScore": { $add: ["$wt", "$pagerank"] } } },
     { $sort: { "mrOut": -1 } },

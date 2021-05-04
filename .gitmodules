@@ -10,3 +10,6 @@
 [submodule "interfaces"]
 	path = interfaces
 	url = git@github.com:Handy-Search/interfaces.git
+[submodule "handy-search"]
+	path = handy-search
+	url = git@github.com:Handy-Search/handy-search.git

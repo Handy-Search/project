@@ -1,8 +1,9 @@
 const { MongoClient } = require("mongodb");
 const Stemmer = require("snowball-stemmers");
 // Replace the uri string with your MongoDB deployment's connection string.
-const uri =
-  "mongodb+srv://handy:search@cluster0.4azy8.mongodb.net";
+const uri = process.env.MONGO_URI
+console.log(uri)
+
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -11,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(() => {
     console.log("mongodb connected!")
-    search("hello world hello there world world")
+    search("green fox phone")
   })
   .catch(console.log)
 
@@ -64,134 +65,78 @@ async function search(query) {
   var uuid = Math.random();
 
   let stemmed_words = Object.keys(wordCounts)
-  let res = await database.collection('tfidf').aggregate([
-    {
-      $match: {
-        wordId: { $in: [1, 4] } //TODO: change this to stemmed words
-      }
-    },
-    { $project: { "tfidf": 1, "wordId": 1, "docId": 1 } },
-  ]);
-  // { $out: { db: database, coll: "tfidf5" } }
-  res.next()
-  return
+  // let res = await database.collection('tfidf').find(
+  //   { wordId: { $in: [1, 4] } },
+  //   { "tfidf": 1, "wordId": 1, "docId": 1 }
+  // )
 
-  var qtfidf = database.collection("tfidf" + uuid);
+  // { $out: { db: database, coll: "tfidf5" } }
+  // res.next()
+
+  // var qtfidf = database.collection("tfidf" + uuid);
 
   // cosine sim numerator
+  queryWeights = {green: 0.3, fox: 0.5, phone: 0.8}
+  console.log(queryWeights)
   var mapFnNum = function map() {
     var word = this.wordId;
-    print(queryWeights);
-    print(word);
-    var wordWeight = queryWeights[word] * this.tfidf;
-    emit(this.docId, wordWeight);
+    let queryWeight = !queryWeights[word] ? 0 : queryWeights[word]
+    var wordWeight = queryWeight * this.tfidf;
+    let res = {
+      wordWeight,
+      tfidf: this.tfidf,
+      wt: queryWeight
+    }
+    emit(this.docId, res);
   };
-  var reduceFnNum = function reduce(docId, queryWeights) {
-    var sum = 0;
-    for (var i = 0; i < queryWeights.length; i++) {
-      sum = sum + queryWeights[i];
+  var reduceFnNum = function reduce(docId, values) {
+    let res = {wordWeight: 0, tfidf: 0, wt: 0}
+    for (val of values) {
+      res.wordWeight += val.wordWeight
+      res.tfidf += Math.pow(val.tfidf, 2)
+      res.wt += Math.pow(val.wt, 2)
     };
-    return sum;
+
+    res.tfidf = Math.sqrt(res.tfidf)
+    res.wt = Math.sqrt(res.wt)
+    res.wordWeight = res.wordWeight / (res.tfidf * res.wt)
+    return res
   };
-  db.qtfidf.mapReduce(
+  let res = await database.collection('tfidf2').mapReduce(
     mapFnNum,
     reduceFnNum,
-    { out: "mrExampleNum" + uuid }
-  )
+    {
+      scope: { queryWeights },
+      out: "mrExampleNum" + uuid,
+      // out: {inline:1},
+      query: { wordId: { $in: stemmed_words } } }
+    )
 
-  // doc weights in denom
-  var mapFnDenomDoc = function map() {
-    var word = this.wordId;
-    print(word);
-    var wordWeight = this.tfidf;
-    emit(this.docId, wordWeight);
-  };
-  var reduceFnDenomDoc = function reduce(docId, queryWeights) {
-    var sum = 0;
-    for (var i = 0; i < queryWeights.length; i++) {
-      sum = sum + Math.pow(queryWeights[i], 2);
-    };
-    return Math.sqrt(sum);
-  };
+  console.log(res)
 
-  db.qtfidf.mapReduce(
-    mapFnDenomDoc,
-    reduceFnDenomDoc,
-    { out: "mrExampleDenD" + uuid }
-  )
-
-  // query weights in denom
-  var mapFnDenomQ = function map() {
-    var word = this.wordId;
-    print(word);
-    var wordWeight = 0;
-    if (queryWeights.has(word)) {
-      wordWeight = queryWeights[word];
-    }
-    emit(this.docId, wordWeight);
-  };
-  var reduceFnDenomQ = function reduce(docId, queryWeights) {
-    var sum = 0;
-    for (var i = 0; i < queryWeights.length; i++) {
-      sum = sum + Math.pow(queryWeights[i], 2);
-    };
-    return Math.sqrt(sum);
-  };
-
-  db.qtfidf.mapReduce(
-    mapFnDenomQ,
-    reduceFnDenomQ,
-    { out: "mrExampleDenQ" + uuid }
-  )
 
   var mrNum = database.collection("mrExampleNum" + uuid);
-  var mrDenD = database.collection("mrExampleDenD" + uuid);
-  var mrDenQ = database.collection("mrExampleDenQ" + uuid);
 
-  mrNum.updateMany({}, { $rename: { "value": "mrNum" } });
-  mrDenD.updateMany({}, { $rename: { "value": "mrDenD" } });
-  mrDenQ.updateMany({}, { $rename: { "value": "mrDenQ" } });
+  // //TODO combine with pagerank?
+  // mrNum.aggregate([
+  //   { $sort: { "mrOut": -1 } },
+  //   { $limit: 30 }
+  // ]);
+  // var sites = database.collection("sites");
+  // db.mrNum.aggregate([
+  //   {
+  //     $lookup: {
+  //       from: "sites",
+  //       localField: "_id",
+  //       foreignField: "docId",
+  //       as: "queryResults"
+  //     }
+  //   }
+  //   //     , { $out: { db: database, coll: "results"+uuid } }
+  // ]);
 
-  db.mrDenD.aggregate([
-    { $merge: { into: { db: database, coll: mrDenQ }, on: "_id" } }
-  ]);
-  db.mrDenQ.aggregate([
-    { $project: { "mrDenD": 1, "mrDenQ": 1, "mrDen": { $multiply: ["$mrDenD", "$mrDenQ"] } } },
-    { $out: { db: database, coll: mrDenQ } }
-  ]);
-  db.mrDenQ.aggregate([
-    { $merge: { into: { db: database, coll: mrNum }, on: "_id" } }
-  ]);
-  db.mrNum.aggregate([
-    { $project: { "mrNum": 1, "mrDenQ": 1, "mrDenD": 1, "mrDen": 1, "mrOut": { $divide: ["$mrNum", "$mrDen"] } } },
-    // maybe combine with pagerank here and the sort and limit?
-    // then combine with sites
-    { $out: { db: database, coll: mrNum } }
-  ]);
-
-  //TODO combine with pagerank?
-  db.mrNum.aggregate([
-    { $sort: { "mrOut": -1 } },
-    { $limit: 30 }
-  ]);
-  var sites = database.collection("sites");
-  db.mrNum.aggregate([
-    {
-      $lookup: {
-        from: "sites",
-        localField: "_id",
-        foreignField: "docId",
-        as: "queryResults"
-      }
-    }
-    //     , { $out: { db: database, coll: "results"+uuid } }
-  ]);
-
-  qtfidf.drop();
   mrNum.drop();
-  mrDenD.drop();
-  mrDenQ.drop();
-  db.close();
+
 
 
   //return the result of the query!

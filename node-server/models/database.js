@@ -10,9 +10,9 @@ const client = new MongoClient(uri, {
 });
 
 client.connect()
-  .then(() => {
+  .then(async () => {
     console.log("mongodb connected!")
-    search("green fox phone")
+    console.log(await search("green fox phone"))
   })
   .catch(console.log)
 
@@ -76,7 +76,7 @@ async function search(query) {
   // var qtfidf = database.collection("tfidf" + uuid);
 
   // cosine sim numerator
-  queryWeights = {green: 0.3, fox: 0.5, phone: 0.8}
+  queryWeights = { green: 0.3, fox: 0.5, phone: 0.8 }
   console.log(queryWeights)
   var mapFnNum = function map() {
     var word = this.wordId;
@@ -90,7 +90,7 @@ async function search(query) {
     emit(this.docId, res);
   };
   var reduceFnNum = function reduce(docId, values) {
-    let res = {wordWeight: 0, tfidf: 0, wt: 0}
+    let res = { wordWeight: 0, tfidf: 0, wt: 0 }
     for (val of values) {
       res.wordWeight += val.wordWeight
       res.tfidf += Math.pow(val.tfidf, 2)
@@ -109,44 +109,51 @@ async function search(query) {
       scope: { queryWeights },
       out: "mrExampleNum" + uuid,
       // out: {inline:1},
-      query: { wordId: { $in: stemmed_words } } }
-    )
+      query: { wordId: { $in: stemmed_words } }
+    }
+  )
 
   console.log(res)
 
 
   var mrNum = database.collection("mrExampleNum" + uuid);
 
-    //TODO @Neil, just a flag to make sure this is set up correctly with the async and parameters, etc
-    async function updateFieldName(from, to, collection) {
-        const result = await collection.updateMany( [
-          {},
-          { $set : { to : "$" + from }}
-        ]);
+  //TODO @Neil, just a flag to make sure this is set up correctly with the async and parameters, etc
+  async function updateFieldName(from, to, collection) {
+    const result = await collection.updateMany([
+      {},
+      { $set: { [to]: "$" + from } }
+    ]);
+  }
+  // docId is set to "_id" after mapreduce
+  updateFieldName("_id", "docId", mrNum);
+
+  var pagerank = database.collection("pagerank");
+  //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
+  const results = await db.pagerank.aggregate([
+    { $merge: { into: { db: database, coll: mrNum }, on: "docId" } },
+    { $project: { "pageScore": { $add: ["$wt", "$pagerank"] } } },
+    { $sort: { "mrOut": -1 } },
+    { $limit: 30 }
+  ]);
+  var sites = database.collection("sites");
+  // db.results.aggregate( [
+  return mrNum.aggregate([
+    {
+      $lookup: {
+        from: "sites",
+        localField: "docId",
+        foreignField: "docId",
+        as: "queryResults"
+      }
     }
-    // docId is set to "_id" after mapreduce
-    updateFieldName("_id", "docId", mrNum);
-    var pagerank = database.collection("pagerank");
-    //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
-    async const results = await db.pagerank.aggregate( [
-      { $merge : { into: { db: database, coll: mrNum }, on: "docId"} },
-      { $project : "pageScore" : { $add : [ "$wt" , "$pagerank" ] } },
-      { $sort : { "mrOut" : -1 } },
-      { $limit : 30 }
-    ] );
-    var sites = database.collection("sites");
-    // db.results.aggregate( [
-    db.mrNum.aggregate( [
-       { $lookup : {
-          from: "sites" ,
-          localField: "docId",
-          foreignField: "docId",
-          as: "queryResults"}
-       }
-       //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection
-       // to pass back to UI?
-  //     , { $out: { db: database, coll: "results"+uuid } }
-    ] );
+    //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection
+    // to pass back to UI?
+    //     , { $out: { db: database, coll: "results"+uuid } }
+  ]).then(res => {
+    mrNum.drop();
+    return res
+  });
 
   // mrNum.aggregate([
   //   { $sort: { "mrOut": -1 } },
@@ -165,13 +172,7 @@ async function search(query) {
   //   //     , { $out: { db: database, coll: "results"+uuid } }
   // ]);
 
-  mrNum.drop();
 
-
-
-  //return the result of the query!
-  //TODO what do we actually want to return and where does it go? back to java and then paginated result?
-  return docFreqs.findOne()
 }
 
 const exampleDB = function (param) {

@@ -119,60 +119,64 @@ async function search(query) {
   var mrNum = database.collection("mrExampleNum" + uuid);
 
   //TODO @Neil, just a flag to make sure this is set up correctly with the async and parameters, etc
-  async function updateFieldName(from, to, collection) {
-    const result = await collection.updateMany([
+  function updateFieldName(from, to, collection) {
+    return collection.updateMany([
       {},
       { $set: { [to]: "$" + from } }
     ]);
   }
   // docId is set to "_id" after mapreduce
-  updateFieldName("_id", "docId", mrNum);
+  await updateFieldName("_id", "docId", mrNum);
 
   var pagerank = database.collection("pagerank");
   //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
-  const results = await db.pagerank.aggregate([
+
+  await db.pagerank.aggregate([
     { $merge: { into: { db: database, coll: mrNum }, on: "docId" } },
     { $project: { "pageScore": { $add: ["$wt", "$pagerank"] } } },
     { $sort: { "mrOut": -1 } },
-    { $limit: 30 }
+    { $limit: 30 },
+    { $out: "mrExampleNum" + uuid }
   ]);
-  var sites = database.collection("sites");
-  // db.results.aggregate( [
+  // first merge with the actual site content
   return mrNum.aggregate([
     {
       $lookup: {
-        from: "sites",
+        from: "web_document",
         localField: "docId",
         foreignField: "docId",
-        as: "queryResults"
+        as: "pagecontent"
+      }
+    },
+    {
+      $lookup: {
+        from: "webpages",
+        localField: "docId",
+        foreignField: "docId",
+        as: "url"
       }
     }
-    //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection
-    // to pass back to UI?
+    //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection?
     //     , { $out: { db: database, coll: "results"+uuid } }
   ]).then(res => {
     mrNum.drop();
     return res
-  });
-
+  })
+  // now merge with the separate collection that contains URLs
+  // replace mrNum with output collection or result var from above
   // mrNum.aggregate([
-  //   { $sort: { "mrOut": -1 } },
-  //   { $limit: 30 }
-  // ]);
-  // var sites = database.collection("sites");
-  // db.mrNum.aggregate([
-  //   {
-  //     $lookup: {
-  //       from: "sites",
-  //       localField: "_id",
-  //       foreignField: "docId",
-  //       as: "queryResults"
-  //     }
-  //   }
+
+  //   // same question re. out
   //   //     , { $out: { db: database, coll: "results"+uuid } }
   // ]);
 
 
+  /*
+  ]).then(res => {
+    mrNum.drop();
+    return res
+  });
+*/
 }
 
 const exampleDB = function (param) {

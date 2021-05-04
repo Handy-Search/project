@@ -117,7 +117,7 @@ async function search(query) {
 
   var mrNum = database.collection("mrExampleNum" + uuid);
 
-    //TODO @Neil,
+    //TODO @Neil, just a flag to make sure this is set up correctly with the async and parameters, etc
     async function updateFieldName(from, to, collection) {
         const result = await collection.updateMany( [
           {},
@@ -130,7 +130,7 @@ async function search(query) {
     //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
     async const results = await db.pagerank.aggregate( [
       { $merge : { into: { db: database, coll: mrNum }, on: "docId"} },
-      { $project : "pageScore" : { $add : [ "$wt" , "$pag" ] } },
+      { $project : "pageScore" : { $add : [ "$wt" , "$pagerank" ] } },
       { $sort : { "mrOut" : -1 } },
       { $limit : 30 }
     ] );
@@ -143,6 +143,8 @@ async function search(query) {
           foreignField: "docId",
           as: "queryResults"}
        }
+       //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection
+       // to pass back to UI?
   //     , { $out: { db: database, coll: "results"+uuid } }
     ] );
 

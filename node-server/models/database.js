@@ -134,36 +134,29 @@ async function search(query) {
       { $sort : { "mrOut" : -1 } },
       { $limit : 30 }
     ] );
-    var sites = database.collection("sites");
-    // db.results.aggregate( [
+    // first merge with the actual site content
     db.mrNum.aggregate( [
        { $lookup : {
-          from: "sites" ,
+          from: "web_document" ,
           localField: "docId",
           foreignField: "docId",
-          as: "queryResults"}
+          as: "pagecontent"}
        }
-       //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection
-       // to pass back to UI?
+       //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection?
   //     , { $out: { db: database, coll: "results"+uuid } }
     ] );
-
-  // mrNum.aggregate([
-  //   { $sort: { "mrOut": -1 } },
-  //   { $limit: 30 }
-  // ]);
-  // var sites = database.collection("sites");
-  // db.mrNum.aggregate([
-  //   {
-  //     $lookup: {
-  //       from: "sites",
-  //       localField: "_id",
-  //       foreignField: "docId",
-  //       as: "queryResults"
-  //     }
-  //   }
-  //   //     , { $out: { db: database, coll: "results"+uuid } }
-  // ]);
+    // now merge with the separate collection that contains URLs
+    // replace mrNum with output collection or result var from above
+    db.mrNum.aggregate( [
+       { $lookup : {
+          from: "webpages" ,
+          localField: "docId",
+          foreignField: "docId",
+          as: "url"}
+       }
+       // same question re. out
+  //     , { $out: { db: database, coll: "results"+uuid } }
+    ] );
 
   mrNum.drop();
 

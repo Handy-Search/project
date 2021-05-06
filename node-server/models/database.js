@@ -12,23 +12,18 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    console.log(await search("green fox phone"))
+    // console.log((await search("organ civic")).length)
   })
   .catch(console.log)
-
-function countWords(wordCounts) {
-
-
-}
 
 
 
 async function search(query) {
-  const database = client.db('indexDBTest');
-  const docFreqs = database.collection('docFreq')
+  const database = client.db('handy_search');
+  // const docFreqs = database.collection('docFreq')
 
   var queryClean = query.replace("/[^a-zA-Z0-9\s]/g", "");
-  var words = query.split(" ");
+  var words = queryClean.split(" ");
   var stem = Stemmer.newStemmer('english');
   words = words.map(word => stem.stem(word));
 
@@ -49,35 +44,18 @@ async function search(query) {
 
     let doc = await logDoc.findOne({ "_id": 4 })//word})
     let logInv = doc != null ? doc.logInv : 0;
-    // console.log(doc, logInv)
     weight = .5 + (weight * logInv);
     queryWeights[word] = weight
   }
 
-  // console.log(wordCounts, queryWeights)
+  console.log(wordCounts, queryWeights)
 
-  // TODO @Neil, it would be easiest to pass in a map from Java with each word
-  // of the query and it's "weight".  Is that possible?
   console.log('query: ' + query)
 
-  // TODO: do the mongodb query here!
-  //  var uuid = 1;
   var uuid = Math.random();
 
   let stemmed_words = Object.keys(wordCounts)
-  // let res = await database.collection('tfidf').find(
-  //   { wordId: { $in: [1, 4] } },
-  //   { "tfidf": 1, "wordId": 1, "docId": 1 }
-  // )
 
-  // { $out: { db: database, coll: "tfidf5" } }
-  // res.next()
-
-  // var qtfidf = database.collection("tfidf" + uuid);
-
-  // cosine sim numerator
-  queryWeights = { green: 0.3, fox: 0.5, phone: 0.8 }
-  console.log(queryWeights)
   var mapFnNum = function map() {
     var word = this.wordId;
     let queryWeight = !queryWeights[word] ? 0 : queryWeights[word]
@@ -102,7 +80,7 @@ async function search(query) {
     res.wordWeight = res.wordWeight / (res.tfidf * res.wt)
     return res
   };
-  let res = await database.collection('tfidf2').mapReduce(
+  let res = await database.collection('tfidf').mapReduce(
     mapFnNum,
     reduceFnNum,
     {
@@ -115,75 +93,82 @@ async function search(query) {
 
   console.log(res)
 
-
   var mrNum = database.collection("mrExampleNum" + uuid);
 
-  //TODO @Neil, just a flag to make sure this is set up correctly with the async and parameters, etc
-  function updateFieldName(from, to, collection) {
-    return collection.updateMany([
-      {},
-      { $set: { [to]: "$" + from } }
-    ]);
-  }
-  // docId is set to "_id" after mapreduce
-  await updateFieldName("_id", "docId", mrNum);
-
-  var pagerank = database.collection("pagerank");
-  //TODO @Neil, can we now do a lookup on results (ie, top thirty results) instead of all of mrNum? (line138)
-
-  await db.pagerank.aggregate([
-    { $lookup: {
-              from: mrNum,
-              localField: "docId",
-              foreignField: "docId",
-              as: "tfidf"
-            }
+  await mrNum.aggregate([
+    {
+      $lookup: {
+        from: "pageranks",
+        localField: "_id",
+        foreignField: "url_id",
+        as: "pagerank"
+      }
     },
-    { $merge: { into: { db: database, coll: mrNum }, on: "docId" } },
-    { $project: { "pageScore": { $add: ["$wt", "$pagerank"] } } },
-    { $sort: { "mrOut": -1 } },
+    {
+      $project: {
+        value: 1,
+        pagerank: { $arrayElemAt: ["$pagerank.pagerank", 0] }
+      }
+    },
+    {
+      $project: {
+        value: 1,
+        pagerank: 1,
+        "rank": { $add: ["$value.wt", "$pagerank"] }
+      }
+    },
+    { $sort: { "rank": -1 } },
     { $limit: 30 },
     { $out: "mrExampleNum" + uuid }
-  ]);
+  ]).toArray()
+
   // first merge with the actual site content
   return mrNum.aggregate([
     {
       $lookup: {
-        from: "web_document",
-        localField: "docId",
-        foreignField: "docId",
-        as: "pagecontent"
+        from: "web_pages",
+        localField: "_id",
+        foreignField: "url.url_id",
+        as: "web_pages"
+      }
+    },
+    {
+      $project: {
+        value: 1,
+        pagerank: 1,
+        rank: 1,
+        doc: { $arrayElemAt: ["$web_pages", 0] }
       }
     },
     {
       $lookup: {
-        from: "webpages",
-        localField: "docId",
-        foreignField: "docId",
-        as: "url"
+        from: "web_document",
+        localField: "doc.doc_id",
+        foreignField: "doc_id",
+        as: "pagecontent"
+      },
+    },
+    { $sort: { "rank": -1 } },
+    { $limit: 30 },
+    {
+      $project: {
+        "doc": 1,
+        "rank": 1,
+        pagecontent: { $arrayElemAt: ["$pagecontent", 0] },
       }
-    }
+    },
+    {
+      $project: {
+        "pagecontent.content": 0,
+      }
+    },
+
     //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection?
     //     , { $out: { db: database, coll: "results"+uuid } }
-  ]).then(res => {
-    mrNum.drop();
-    return res
-  })
-  // now merge with the separate collection that contains URLs
-  // replace mrNum with output collection or result var from above
-  // mrNum.aggregate([
-
-  //   // same question re. out
-  //   //     , { $out: { db: database, coll: "results"+uuid } }
-  // ]);
-
-
-  /*
-  ]).then(res => {
+  ]).toArray().then(res => {
     mrNum.drop();
     return res
   });
-*/
 }
 
 const exampleDB = function (param) {

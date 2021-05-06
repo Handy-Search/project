@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    // console.log((await search("organ civic")).length)
+    // console.log((await search("organ civic")))
   })
   .catch(console.log)
 
@@ -20,10 +20,10 @@ client.connect()
 
 async function search(query) {
   const database = client.db('handy_search');
-  // const docFreqs = database.collection('docFreq')
+  const docFreqs = database.collection('docFreq')
 
   var queryClean = query.replace("/[^a-zA-Z0-9\s]/g", "");
-  var words = queryClean.split(" ");
+  var words = query.split(" ");
   var stem = Stemmer.newStemmer('english');
   words = words.map(word => stem.stem(word));
 
@@ -44,6 +44,7 @@ async function search(query) {
 
     let doc = await logDoc.findOne({ "_id": 4 })//word})
     let logInv = doc != null ? doc.logInv : 0;
+    // console.log(doc, logInv)
     weight = .5 + (weight * logInv);
     queryWeights[word] = weight
   }
@@ -52,6 +53,8 @@ async function search(query) {
 
   console.log('query: ' + query)
 
+  // TODO: do the mongodb query here!
+  //  var uuid = 1;
   var uuid = Math.random();
 
   let stemmed_words = Object.keys(wordCounts)
@@ -91,11 +94,11 @@ async function search(query) {
     }
   )
 
-  console.log(res)
+  // console.log(res)
 
   var mrNum = database.collection("mrExampleNum" + uuid);
 
-  await mrNum.aggregate([
+  return mrNum.aggregate([
     {
       $lookup: {
         from: "pageranks",
@@ -120,55 +123,52 @@ async function search(query) {
     { $sort: { "rank": -1 } },
     { $limit: 30 },
     { $out: "mrExampleNum" + uuid }
-  ]).toArray()
-
-  // first merge with the actual site content
-  return mrNum.aggregate([
-    {
-      $lookup: {
-        from: "web_pages",
-        localField: "_id",
-        foreignField: "url.url_id",
-        as: "web_pages"
-      }
-    },
-    {
-      $project: {
-        value: 1,
-        pagerank: 1,
-        rank: 1,
-        doc: { $arrayElemAt: ["$web_pages", 0] }
-      }
-    },
-    {
-      $lookup: {
-        from: "web_document",
-        localField: "doc.doc_id",
-        foreignField: "doc_id",
-        as: "pagecontent"
-      },
-    },
-    { $sort: { "rank": -1 } },
-    { $limit: 30 },
-    {
-      $project: {
-        "doc": 1,
-        "rank": 1,
-        pagecontent: { $arrayElemAt: ["$pagecontent", 0] },
-      }
-    },
-    {
-      $project: {
-        "pagecontent.content": 0,
-      }
-    },
-
-    //TODO: @Neil, not sure how the js variables work, can we store this as a var or need to output to a collection?
-    //     , { $out: { db: database, coll: "results"+uuid } }
   ]).toArray().then(res => {
-    mrNum.drop();
-    return res
-  });
+    // first merge with the actual site content
+    return mrNum.aggregate([
+      {
+        $lookup: {
+          from: "web_pages",
+          localField: "_id",
+          foreignField: "url.url_id",
+          as: "web_pages"
+        }
+      },
+      {
+        $project: {
+          value: 1,
+          pagerank: 1,
+          rank: 1,
+          doc: { $arrayElemAt: ["$web_pages", 0] }
+        }
+      },
+      {
+        $lookup: {
+          from: "web_document",
+          localField: "doc.doc_id",
+          foreignField: "doc_id",
+          as: "pagecontent"
+        },
+      },
+      { $sort: { "rank": -1 } },
+      { $limit: 30 },
+      {
+        $project: {
+          "doc": 1,
+          "rank": 1,
+          pagecontent: { $arrayElemAt: ["$pagecontent", 0] },
+        }
+      },
+      {
+        $project: {
+          "pagecontent.content": 0,
+        }
+      },
+    ]).toArray().then(res => {
+      mrNum.drop();
+      return res
+    });
+  })
 }
 
 const exampleDB = function (param) {

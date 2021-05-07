@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    console.log(JSON.stringify(await search("civic organ hello"), null, 4))
+    // console.log(JSON.stringify(await search("civic organ hello"), null, 4))
   })
   .catch(console.log)
 

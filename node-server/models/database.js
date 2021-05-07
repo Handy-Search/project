@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    // console.log((await search("civic organ hello")))
+    // console.log(JSON.stringify(await search("civic organ hello"), null, 4))
   })
   .catch(console.log)
 
@@ -138,6 +138,9 @@ async function search(query) {
 
 }
 
+/*
+db.web_document.createIndex({ doc_id: 1 })
+*/
 const exampleDB = function (param) {
   // todo replace this with some code that returns a promise
   return Promise.resolve("EXAMPLE: " + param)

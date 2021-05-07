@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    // console.log(JSON.stringify(await search("civic organ hello"), null, 4))
+    console.log(JSON.stringify(await search("civic organ hello"), null, 4))
   })
   .catch(console.log)
 
@@ -50,6 +50,7 @@ async function search(query) {
     queryWeights[word] = weight
   }
 
+  console.log(Object.keys(wordCounts) === Object.keys(queryWeights))
   let stemmed_words = Object.keys(wordCounts)
 
   return database.collection('testTfidfPr').aggregate([
@@ -60,9 +61,8 @@ async function search(query) {
         wt: {
           $function: {
             body: `function(word, queryWeights) {
-            let queryWeight = !queryWeights[word] ? 0 : queryWeights[word]
-            return queryWeight;
-          }`,
+                     return queryWeights[word] || 0
+                   }`,
             args: ["$word_tfidf.wordId", queryWeights],
             lang: "js"
           }
@@ -134,12 +134,13 @@ async function search(query) {
         "pagecontent.content": 0,
       }
     }
-  ]).toArray()
+  ]).toArray()//, {explain: true}).toArray()
 
 }
 
 /*
 db.web_document.createIndex({ doc_id: 1 })
+db.testTfidfPr.createIndex({ "word_tfidf.word_id": 1 })
 */
 const exampleDB = function (param) {
   // todo replace this with some code that returns a promise

@@ -6,7 +6,6 @@ import {
   Button
 } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { API_URL } from '../Utilities';
 import "../styles/SearchPage.css"
 
 class Header extends React.Component {

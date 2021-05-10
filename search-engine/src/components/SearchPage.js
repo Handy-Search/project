@@ -6,7 +6,7 @@ import {
   Container,
   Col
 } from 'react-bootstrap'
-import { API_URL } from '../Utilities';
+import Utils from '../Utilities';
 
 class SearchPage extends React.Component {
   constructor() {
@@ -19,7 +19,7 @@ class SearchPage extends React.Component {
   }
 
   search = q => {
-
+    let API_URL = Utils.API_URL
     console.log("SEARCH", API_URL + "/search?q=" + q)
     fetch(API_URL + "/search?q=" + q)
       .then(res => res.json())

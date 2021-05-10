@@ -6,6 +6,7 @@ import {
   Container,
   Col
 } from 'react-bootstrap'
+import { API_URL } from '../Utilities';
 
 class SearchPage extends React.Component {
   constructor() {

@@ -19,7 +19,7 @@ class SearchPage extends React.Component {
 
   search = q => {
 
-    console.log("SEARCH", q)
+    console.log("SEARCH", API_URL + "/search?q=" + q)
     fetch(API_URL + "/search?q=" + q)
       .then(res => res.json())
       .then(results => {

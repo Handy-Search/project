@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 client.connect()
   .then(async () => {
     console.log("mongodb connected!")
-    // console.log(JSON.stringify(await search("civic organ hello"), null, 4))
+    console.log(JSON.stringify(await search("civic organ hello"), null, 4))
   })
   .catch(console.log)
 
@@ -50,7 +50,6 @@ async function search(query) {
     queryWeights[word] = weight
   }
 
-  console.log(Object.keys(wordCounts) === Object.keys(queryWeights))
   let stemmed_words = Object.keys(wordCounts)
 
   return database.collection('testTfidfPr').aggregate([
@@ -93,7 +92,12 @@ async function search(query) {
     },
     {
       $project: {
-        rank: { $add: ["$pagerank", { $divide: ["$wordWeight", { $multiply: ["$tfidf", "$wt"] }] }] }
+        rank: {
+          $multiply: [
+            { $add: [1, "$pagerank"] },
+            { $pow: [{ $divide: ["$wordWeight", { $multiply: ["$tfidf", "$wt"] }] }, 2]}
+          ]
+        }
       }
     },
     { $sort: { rank: -1 } },
@@ -134,7 +138,7 @@ async function search(query) {
         "pagecontent.content": 0,
       }
     }
-  ]).toArray()//, {explain: true}).toArray()
+  ]).toArray()
 
 }
 

@@ -6,6 +6,7 @@ import {
   Container,
   Col
 } from 'react-bootstrap'
+import Utils from '../Utilities';
 
 class SearchPage extends React.Component {
   constructor() {
@@ -18,9 +19,9 @@ class SearchPage extends React.Component {
   }
 
   search = q => {
-
-    console.log("SEARCH", q)
-    fetch("http://localhost:8080/search?q=" + q)
+    let API_URL = Utils.API_URL
+    console.log("SEARCH", API_URL + "/search?q=" + q)
+    fetch(API_URL + "/search?q=" + q)
       .then(res => res.json())
       .then(results => {
         console.log(results)
@@ -39,29 +40,6 @@ class SearchPage extends React.Component {
 
         this.setState({ results, resultBoxes })
       }).catch(console.log)
-
-
-
-    /*
-    {
-  _id: -2082984149,
-  rank: 2.1487756377319944,
-  doc: {
-    _id: 60923c3f71001509def0790e,
-    doc_id: 1350421293,
-    last_crawled: 1620196415317,
-    url: [Object]
-  },
-  pagecontent: {
-    _id: 60923c4171001509def0798b,
-    doc_id: 1350421293,
-    mime: 'text/html',
-    preview: 'Skip to content Sign&nbsp;up Sign&nbsp;up Why GitHub? Features → Mobile → Actions → Codespaces → Packages → Security → Code review → Project management → Integrations → GitHub Sponsors → Customer stories→ Team Enterprise Explore Explore',
-    title: 'Features • GitHub Actions · GitHub'
-  }
-}
-    */
-
   }
 
   render() {

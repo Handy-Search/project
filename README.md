@@ -3,6 +3,12 @@
 The final project for CIS555, a distributed search engine comprised of a crawler, 
 indexer, PageRank, and UI.
 
+## Team members
+Harsh Parekh (hpar)
+Alex Hirsch (hirschal)
+Neil Shweky (nshweky)
+David Yastremsky (dyas)
+
 ## Cloning
 
 To clone the repo and all its sub modules run:

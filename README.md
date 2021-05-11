@@ -11,13 +11,13 @@ David Yastremsky (dyas)
 
 ## Description
 
-We implemented several features in building this distributed, performant, fault-tolerant search engine. These are described in detail in our [final report](Handy Search - Final Report.pdf), but at a high level:
+We implemented several features in building this distributed, performant, fault-tolerant search engine. These are described in detail in our [final report](https://github.com/Handy-Search/project/blob/main/Handy%20Search%20-%20Final%20Report.pdf), but at a high level:
 * A crawler and indexer implemented on top of Apache Flink to crawl and process pages across the web.
 * PageRank implemented on Hadoop MapReduce to calculate the authority of different hosts.
 * A search engine query on MongoDb.
 * A server and UI built on top of React for users to access the search engine.
 
-In terms of extra credit, we also leveraged Flink's exactly once semantic checkpointing to build out a fault-tolerant crawler/indexer. When our crawler running locally failed for two hours in the middle of the night due to an internet outage, Flink recovered and continued crawling/indexing. This helped us emulate the continuous crawling and indexing of a modern day search engine.
+In terms of extra credit, we leveraged Flink's exactly once semantic checkpointing to build out a fault-tolerant crawler/indexer. When our crawler running locally failed for two hours in the middle of the night due to an internet outage, Flink recovered and continued crawling/indexing. This helped us emulate the continuous crawling and indexing of a modern day search engine.
 
 ## Source Files
 

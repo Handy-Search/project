@@ -21,14 +21,24 @@ In terms of extra credit, we also leveraged Flink's exactly once semantic checkp
 
 ## Source Files
 
-There are many files included, with code documented inside. At a high level, we broke down our repository into sub-modules for each component, with each containing both main source files and extensive testing for those files:
+There are many files included, with code documented inside. At a high level, we broke down our repository into sub-modules for each component, with each containing both main source files and extensive testing for those files. Many contain individual deployment instructions for the component.
 * Crawler contains all source files for the crawler, broken down into factories, filters, functions, interfaces, mappers, sinks, and sources. The way these plug into the Flink topology can be seen at src/Crawler.java.
 * Handy-search contains the main program for running the crawler and indexer.
-* indexer contains all source files for the indexer, broken down into constants, mappers, and sinks. How these plug into a Flink topology can be seen in Indexer.java.
-* interfaces contains all shared APIs/interfaces. These are broken down into adapters, functional, http (synchronous and asynchronous), interfaces, models, regex, and robots. These also hold some shared MongoDB and S3 API components.
-* node-server
-* pagerank
-* server
+* Indexer contains all source files for the indexer, broken down into constants, mappers, and sinks. How these plug into a Flink topology can be seen in Indexer.java.
+* Interfaces contains all shared APIs/interfaces. These are broken down into adapters, functional, http (synchronous and asynchronous), interfaces, models, regex, and robots. These also hold some shared MongoDB and S3 API components.
+* Node-server contains the Node server for the search query calculations. These are broken up into models and routes.
+* Pagerank contains everything necessary for PageRank, broken down into mapper and reducers for each step of the process.
+* Search-engine contains the React files for running the search engine. These are broken down into components, styles, and different classes such as App, Utilities, and ReportWebVital.
+
+## Build Instructions
+
+Individual sub-modules tend to be self-encapsulated, with some containing instructions for starting individual components like React. Follow instructions from the next sections to clone the sub-modules and set up MongoDB.
+
+Handy-Search's main class can be packaged into a JAR for running on AWS on KDA for a fully-managed Flink instance, EMR for an instance with greater control, or EC2 for a single node instance. It can also be run locally, if preferred. The seed file must be in S3 and MongoDB must be started. The JAR must be run with the arguments MongoDB URI and S3 seed file location, or a warning will be returned prompting you to do so.
+
+Once done, TestTFIDF in Indexer can be called to generate the TFIDF scores. Concurrently, you can run PageRank by packaging it as a JAR and deploying that JAR as an AWS EMR job until it completes.
+
+At that point, the search results are ready. Follow the instructions in search-engine submodule to set it up, either on your machine or a cloud-based one like Amazon EC2. Search away!
 
 ## Cloning
 

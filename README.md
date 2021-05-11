@@ -11,7 +11,7 @@ David Yastremsky (dyas)
 
 ## Description
 
-We implemented several features in building this distributed, performant, fault-tolerant search engine. These are described in detail in our final paper, but at a high level:
+We implemented several features in building this distributed, performant, fault-tolerant search engine. These are described in detail in our [final report](Handy Search - Final Report.pdf), but at a high level:
 * A crawler and indexer implemented on top of Apache Flink to crawl and process pages across the web.
 * PageRank implemented on Hadoop MapReduce to calculate the authority of different hosts.
 * A search engine query on MongoDb.

@@ -9,7 +9,7 @@ Alex Hirsch (hirschal)
 Neil Shweky (nshweky)
 David Yastremsky (dyas)
 
-## Description
+## Feature Description
 
 We implemented several features in building this distributed, performant, fault-tolerant search engine. These are described in detail in our [final report](https://github.com/Handy-Search/project/blob/main/Handy%20Search%20-%20Final%20Report.pdf), but at a high level:
 * A crawler and indexer implemented on top of Apache Flink to crawl and process pages across the web.
@@ -17,7 +17,9 @@ We implemented several features in building this distributed, performant, fault-
 * A search engine query on MongoDb.
 * A server and UI built on top of React for users to access the search engine.
 
-In terms of extra credit, we leveraged Flink's exactly once semantic checkpointing to build out a fault-tolerant crawler/indexer. When our crawler running locally failed for two hours in the middle of the night due to an internet outage, Flink recovered and continued crawling/indexing. This helped us emulate the continuous crawling and indexing of a modern day search engine.
+## Extra Credit
+
+We leveraged Flink's exactly once semantic checkpointing to build out a fault-tolerant crawler/indexer. When our crawler running locally failed for two hours in the middle of the night due to an internet outage, Flink recovered and continued crawling/indexing. This helped us emulate the continuous crawling and indexing of a modern day search engine.
 
 ## Source Files
 
@@ -30,7 +32,7 @@ There are many files included, with code documented inside. At a high level, we 
 * Pagerank contains everything necessary for PageRank, broken down into mapper and reducers for each step of the process.
 * Search-engine contains the React files for running the search engine. These are broken down into components, styles, and different classes such as App, Utilities, and ReportWebVital.
 
-## Build Instructions
+## Installing and Running
 
 Individual sub-modules tend to be self-encapsulated, with some containing instructions for starting individual components like React. Follow instructions from the next sections to clone the sub-modules and set up MongoDB.
 

@@ -36,9 +36,10 @@ There are many files included, with code documented inside. At a high level, we 
 
 Individual sub-modules tend to be self-encapsulated, with some containing instructions for starting individual components like React. Follow instructions from the next sections to clone the sub-modules and set up MongoDB.
 
-Handy-Search's main class runs the crawler and indexer. It can be packaged into a JAR for running on AWS on KDA for a fully-managed Flink instance, EMR for an instance with greater control, or EC2 for a single node instance. It can also be run locally, if preferred. The seed file must be in S3 and MongoDB must be started. The JAR must be run with the arguments MongoDB URI and S3 seed file location, or a warning will be returned prompting you to do so.
+Handy-Search's main class can be packaged into a JAR for running on AWS on KDA for a fully-managed Flink instance, EMR for an instance with greater control, or EC2 for a single node instance. It can also be run locally, if preferred. The seed file can either be in S3 or provided locally and MongoDB must be started. The JAR must be run with the arguments MongoDB URI and seed file location, or a warning will be returned prompting you to do so.
+To setup MongoDB refer to [mongo-cli installation guide](https://docs.mongodb.com/mongocli/stable/install/) and [Create a Database in MongoDB post](https://www.mongodb.com/basics/create-database).
 
-Once done, TestTFIDF in Indexer can be called to generate the TFIDF scores. While it is runing, you can also run PageRank by packaging it as a JAR and deploying that JAR as an AWS EMR job until it completes.
+Once done, TestTFIDF in Indexer can be called to generate the TFIDF scores. Concurrently, you can run PageRank by packaging it as a JAR and deploying that JAR as an AWS EMR job until it completes.
 
 At that point, the search results are ready. Follow the instructions in search-engine submodule to set it up, either on your machine or a cloud-based one like Amazon EC2. Search away!
 
@@ -66,25 +67,17 @@ Components can be run from their directory using:
 mvn exec:java
 ```
 
-## Setting up MongoDB
+To deploy to a new Flink session use:
 
-To install the MongoDB CLI:
+
+```sh
+flink run <jar-file> <args>
 ```
-brew install mongodb/brew/mongodb-community-shell
+
+To deploy to a pre-configured Flink session on a YARN cluster use:
+
+```sh
+flink run -m yarn-cluster -yid <flink-application-id> <jar-file> <args>
 ```
-Then open up a terminal and run:
-```
-mongod --dbpath=/Users/<user>/data/db
-```
-While that's running open another terminal and run:
-```
-mongo "mongodb+srv://cluster0.4azy8.mongodb.net/myFirstDatabase" --username handy
-Enter password: search
-```
-Now you're in the mongo shell! Here are some commands to try:
-```
-show databases
-use <database>
-db.getCollectionNames()
-db.<collection>.findOne()
-```
+
+You can also modify and use `./handy-search/deploy.sh` to simplify deploying.
